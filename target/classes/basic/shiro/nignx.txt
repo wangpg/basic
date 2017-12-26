@@ -1,0 +1,59 @@
+user www www;#用户 组 或者nobody不指向用户使用当前用户
+worker_processes 4;#CPU核数
+worker_cpu_affinity 00000001 00000010 00000100 00001000;#CPU的亲和力
+
+
+#pid  /user/local/nignx/logs/ngnix.pid
+
+worker_rlimit_nofile 102400;#一个进程打开的最大文件数
+
+events{
+  use epoll;#多路复用的IO 基于LINUX2.6以上的内核
+  worker_connections 102400;#单个worker_process的最大连接数，服务器最大连接数=4*102400
+}
+
+http{
+  include mime.types;#根据请求后缀找到mime.types，返回response响应类型
+  default_type application/octet-stream;#数据流  也可以是文本
+  fastcgi_intercept_errors on;#fastcgi输出的http1.0 RE PHP
+  charset utf-8;#字符集
+  server_names_hash_bucket_size 128;保存服务器名字的hash表的大小
+  client_header_buffer_sie 4k ;
+  large_client_header_buffers 4 32k;
+  client_max_body_size 300m;#允许客户端请求的最大文件大小
+  sendfile on;
+  tcp_nopush on ;#防止网络阻塞
+  
+  keepalive_timeout 60;#设置值 超时时间，客户端多长时间不点;不能设置太大，防止资源占用
+  tcp_nodelay on;#提供数据的实时响应性
+  client_body_buffer_size 512k;缓冲区代理缓冲用户请求的最大字节数  缓存用户请求，如果两次点击的请求一样
+  
+  proxy_connect_time 5;#和后台服务器的连接超时时间
+  proxy_read_timeout 60;连接成功后，后端服务器响应的时间 代理接收时间
+  proxy_send_timeout 5;后端服务器数据回传的时间
+  proxy_buffer_sie 16k;设置代理服务器保存用户header信息的缓冲区的大小
+  proxy_buffers 4 64k;缓冲区，网页平均在32K以下的话，可这样设置
+  proxy_busy_buffers_size 128k;高负荷下缓冲区大小
+  proxy_temp_file_write_size 128k;设置缓存文件夹的大小,大于这个值，将从upstream服务器上去拿
+  
+  gzip on; 压缩静态资源 JS/CSS.PING..10M->2M
+  gzip_min_length 1k;
+  gzip_buffers 4 16k;
+  gzip_http_version 1.1;
+  gzip_comp_level 2;压缩级别,牵涉到服务器压力，1-9  值越小，压缩比率越小，CPU处理更快*****
+  gzip _types text/plain a
+  gzip_vary on;http响应中增加一行目地是改变反向代理服务器的策略
+  
+  log_format main '$remote_addr $remote_user [$time_local ] "$request"' IP
+                  $status $body_bytes_sent $http_refer 状态 发送大小 响应头信息
+                  $http_user_agent  ..
+                  
+  updatream web1{
+  
+  }
+  updatream web2{
+  
+  }
+  
+  include vhosts.conf;
+}
